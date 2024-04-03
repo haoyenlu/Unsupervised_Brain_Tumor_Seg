@@ -16,7 +16,7 @@ class TumorImageDataset(Dataset):
     self.size = size
 
     all_files = [os.path.basename(x) for x in glob.glob(os.path.join(self.root,"*.mat"))]
-    all_files.remove('cvind.mat')
+    if 'cvind.mat' in all_files: all_files.remove('cvind.mat')
     train_split = np.ceil(self.split_ratio * len(all_files)).astype(int)
     
     if is_train:
