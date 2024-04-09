@@ -16,8 +16,8 @@ import numpy as np
 from torch.nn import CrossEntropyLoss, Dropout, Softmax, Linear, Conv2d, LayerNorm
 from torch.nn.modules.utils import _pair
 from scipy import ndimage
-from . import vit_seg_configs as configs
-from .vit_seg_modeling_resnet_skip import ResNetV2
+import vit_seg_configs as configs
+from vit_seg_modeling_resnet_skip import ResNetV2
 
 
 logger = logging.getLogger(__name__)
@@ -372,6 +372,7 @@ class VisionTransformer(nn.Module):
         super(VisionTransformer, self).__init__()
         self.num_classes = num_classes
         self.zero_head = zero_head
+        self.vis = vis
         self.classifier = config.classifier
         self.transformer = Transformer(config, img_size, vis)
         self.decoder = DecoderCup(config)
@@ -388,6 +389,8 @@ class VisionTransformer(nn.Module):
         x, attn_weights, features = self.transformer(x)  # (B, n_patch, hidden)
         x = self.decoder(x, features)
         logits = self.segmentation_head(x)
+
+        if self.vis: return logits, attn_weights
         return logits
 
     def load_from(self, weights):
