@@ -4,7 +4,7 @@ from medpy import metric
 from scipy.ndimage import zoom
 import torch.nn as nn
 import SimpleITK as sitk
-from numpy.linalg import eigh
+from scipy.linalg import eigh
 
 
 class DiceLoss(nn.Module):
