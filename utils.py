@@ -4,6 +4,7 @@ from medpy import metric
 from scipy.ndimage import zoom
 import torch.nn as nn
 import SimpleITK as sitk
+from numpy.linalg import eigh
 
 
 class DiceLoss(nn.Module):
@@ -100,3 +101,28 @@ def test_single_volume(image, label, net, classes, patch_size=[256, 256], test_s
         sitk.WriteImage(img_itk, test_save_path + '/'+ case + "_img.nii.gz")
         sitk.WriteImage(lab_itk, test_save_path + '/'+ case + "_gt.nii.gz")
     return metric_list
+
+
+def tokencut(feats,tau=0.2,return_eigen=False):
+    feats = torch.nn.functional.normalize(feats, p=2)
+    A = (feats @ feats.transpose(1,0))
+    A = A.detach().numpy()
+    eps = 1e-30
+    A = np.where(A.astype(float) < tau,eps,A)
+
+    d_i = np.sum(A,axis=1)
+    D = np.diag(d_i)
+    _, eigenvectors = eigh(D-A,D)
+    eigenvec = np.copy(eigenvectors[:,1])
+
+    second_smallest_vec = eigenvectors[:,1]
+    avg = np.sum(second_smallest_vec) / len(second_smallest_vec)
+    bipartition = second_smallest_vec > avg
+    seed = np.argmax(np.abs(second_smallest_vec))
+
+    if bipartition[seed] != 1:
+        eigenvec = eigenvec * -1
+        bipartition = np.logical_not(bipartition)
+
+    if return_eigen: return eigenvec
+    return bipartition.astype(float)

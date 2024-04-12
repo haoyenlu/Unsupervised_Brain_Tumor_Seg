@@ -374,7 +374,7 @@ class VisionTransformer(nn.Module):
         self.zero_head = zero_head
         self.vis = vis
         self.classifier = config.classifier
-        self.transformer = Transformer(config, img_size, vis)
+        self.transformer = Transformer(config, img_size, vis=False)
         self.decoder = DecoderCup(config)
         self.segmentation_head = SegmentationHead(
             in_channels=config['decoder_channels'][-1],
@@ -386,12 +386,16 @@ class VisionTransformer(nn.Module):
     def forward(self, x):
         if x.size()[1] == 1:
             x = x.repeat(1,3,1,1)
-        x, attn_weights, features = self.transformer(x)  # (B, n_patch, hidden)
+        x, _ , features = self.transformer(x)  # (B, n_patch, hidden)
         x = self.decoder(x, features)
         logits = self.segmentation_head(x)
-
-        if self.vis: return logits, attn_weights
         return logits
+
+    def _get_transformer_output(self,x):
+        if x.size()[1] == 1:
+            x = x.repeat(1,3,1,1)
+        x, _ , features = self.transformer(x)  # (B, n_patch, hidden)
+        return x
 
     def load_from(self, weights):
         with torch.no_grad():
